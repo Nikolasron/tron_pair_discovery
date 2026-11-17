@@ -1,0 +1,40 @@
+name: Tron Streak Discovery
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Runs every 15 mins
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Crucial for saving the state file
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Streak Discovery
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TRONGRID_API_KEY: ${{ secrets.TRONGRID_API_KEY }}
+        run: python tron_pair_discovery.py
+
+      - name: Save State
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pair_state.json
+          git diff --staged --quiet || (git commit -m "Update streak state" && git push)
